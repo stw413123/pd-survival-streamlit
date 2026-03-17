@@ -194,7 +194,7 @@ if st.session_state["pending_predict"]:
 # 页面头部
 # -----------------------------
 st.title("PD生存风险预测平台")
-st.caption("单个 Streamlit 应用版本：可部署到 Streamlit Community Cloud")
+st.caption("单个 Streamlit 应用版本：已完成云端部署测试")
 
 with st.sidebar:
     st.write("预测内核：Python 版 fit10")
