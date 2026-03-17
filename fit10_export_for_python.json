@@ -1,0 +1,34 @@
+{
+  "model_name": "fit10",
+  "times": [3, 5, 7],
+  "baseline_survival_at_lp0": {
+    "3y": 0.991,
+    "5y": 0.9617,
+    "7y": 0.912
+  },
+  "coefficients": {
+    "Age_at_onset=>50": 1.0546,
+    "GBA1_mutation=Yes": 0.3071,
+    "T2D=Yes": 0.4532,
+    "DBS=Yes": -0.6653,
+    "UPDRS_Part_III": 0.0107,
+    "HY_Stage=2": 0.6038,
+    "HY_Stage=2.5": 0.8222,
+    "HY_Stage=3": 1.0927,
+    "HY_Stage=4": 1.5368,
+    "HY_Stage=5": 1.7467,
+    "Falls=Yes": 0.2231,
+    "Depression=Yes": 0.2308,
+    "Cognitive_dysfunction=Yes": 0.1102
+  },
+  "factor_levels": {
+    "Age_at_onset": ["≤50", ">50"],
+    "GBA1_mutation": ["No", "Yes"],
+    "T2D": ["No", "Yes"],
+    "DBS": ["No", "Yes"],
+    "Falls": ["No", "Yes"],
+    "Depression": ["No", "Yes"],
+    "Cognitive_dysfunction": ["No", "Yes"],
+    "HY_Stage": ["1", "2", "2.5", "3", "4", "5"]
+  }
+}
