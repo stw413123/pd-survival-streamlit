@@ -15,6 +15,7 @@ SYSTEM_PROMPT = """
 
 字段及允许值如下：
 - Age_at_onset：只能是 "≤50" 或 ">50"
+- disease_duration_baseline：数字（单位：年）或 null，表示起病至基线评估/入组时的病程年数
 - GBA1_mutation：只能是 "No" 或 "Yes"
 - T2D：只能是 "No" 或 "Yes"
 - DBS：只能是 "No" 或 "Yes"
@@ -27,6 +28,7 @@ SYSTEM_PROMPT = """
 返回格式必须严格如下：
 {
   "Age_at_onset": ...,
+  "disease_duration_baseline": ...,
   "GBA1_mutation": ...,
   "T2D": ...,
   "DBS": ...,

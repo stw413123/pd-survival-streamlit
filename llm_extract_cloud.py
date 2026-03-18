@@ -14,6 +14,7 @@ from prompts import SYSTEM_PROMPT
 
 REQUIRED_FIELDS = [
     "Age_at_onset",
+    "disease_duration_baseline",
     "GBA1_mutation",
     "T2D",
     "DBS",
@@ -40,6 +41,7 @@ def _safe_json_loads(text: str) -> Dict[str, Any]:
 def _normalize_output(data: Dict[str, Any]) -> Dict[str, Any]:
     result = {
         "Age_at_onset": data.get("Age_at_onset"),
+        "disease_duration_baseline": data.get("disease_duration_baseline"),
         "GBA1_mutation": data.get("GBA1_mutation"),
         "T2D": data.get("T2D"),
         "DBS": data.get("DBS"),
@@ -52,6 +54,16 @@ def _normalize_output(data: Dict[str, Any]) -> Dict[str, Any]:
         "uncertainties": data.get("uncertainties", []),
         "can_predict": bool(data.get("can_predict", False)),
     }
+
+    for num_field in ["disease_duration_baseline", "UPDRS_Part_III"]:
+        if result.get(num_field) in ["", []]:
+            result[num_field] = None
+        elif result.get(num_field) is not None:
+            try:
+                result[num_field] = float(result[num_field])
+            except Exception:
+                pass
+
     missing = [k for k in REQUIRED_FIELDS if result.get(k) in [None, "", []]]
     result["missing_fields"] = sorted(list(set(result.get("missing_fields", []) + missing)))
     result["can_predict"] = len(result["missing_fields"]) == 0

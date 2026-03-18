@@ -9,6 +9,7 @@ st.set_page_config(page_title="PD生存风险预测平台", layout="wide")
 
 REQUIRED_FIELDS = [
     "Age_at_onset",
+    "disease_duration_baseline",
     "GBA1_mutation",
     "T2D",
     "DBS",
@@ -21,6 +22,7 @@ REQUIRED_FIELDS = [
 
 DEFAULT_PAYLOAD = {
     "Age_at_onset": ">50",
+    "disease_duration_baseline": 5.0,
     "GBA1_mutation": "No",
     "T2D": "No",
     "DBS": "No",
@@ -60,7 +62,7 @@ def apply_pending_fill_if_any():
     for field, value in pending.items():
         if value is None:
             continue
-        if field == "UPDRS_Part_III":
+        if field in ["disease_duration_baseline", "UPDRS_Part_III"]:
             try:
                 value = float(value)
             except Exception:
@@ -106,6 +108,7 @@ def classify_risk(preds: dict) -> str:
 def get_current_payload_from_session():
     return {
         "Age_at_onset": st.session_state["Age_at_onset"],
+        "disease_duration_baseline": float(st.session_state["disease_duration_baseline"]),
         "GBA1_mutation": st.session_state["GBA1_mutation"],
         "T2D": st.session_state["T2D"],
         "DBS": st.session_state["DBS"],
@@ -144,7 +147,7 @@ def show_prediction_result(result: dict):
     st.markdown("## 三、基础解释")
     st.write(f"总体风险等级：{risk_label}")
     st.write("解释说明：")
-    st.write("该结果由 fit10 Cox 主模型的 Python 复现版计算生成。")
+    st.write("该结果由新 fit10 Cox 主模型的 Python 复现版计算生成。")
     st.write("当前平台仅用于科研与辅助评估，不替代临床诊断和治疗决策。")
 
 
@@ -219,11 +222,17 @@ st.markdown("## 一、结构化变量输入")
 col1, col2 = st.columns(2)
 with col1:
     age = st.selectbox("Age at onset", ["≤50", ">50"], key="Age_at_onset")
+    disease_duration_baseline = st.number_input(
+        "Disease duration at baseline (years)",
+        min_value=0.0,
+        step=0.5,
+        key="disease_duration_baseline"
+    )
     gba1 = st.selectbox("GBA1 mutation", ["No", "Yes"], key="GBA1_mutation")
     t2d = st.selectbox("T2D", ["No", "Yes"], key="T2D")
     dbs = st.selectbox("DBS", ["No", "Yes"], key="DBS")
-    updrs = st.number_input("UPDRS Part III", min_value=0.0, step=1.0, key="UPDRS_Part_III")
 with col2:
+    updrs = st.number_input("UPDRS Part III", min_value=0.0, step=1.0, key="UPDRS_Part_III")
     hy = st.selectbox("H&Y Stage", ["1", "2", "2.5", "3", "4", "5"], key="HY_Stage")
     falls = st.selectbox("Falls", ["No", "Yes"], key="Falls")
     depression = st.selectbox("Depression", ["No", "Yes"], key="Depression")
@@ -231,6 +240,7 @@ with col2:
 
 payload = {
     "Age_at_onset": age,
+    "disease_duration_baseline": float(disease_duration_baseline),
     "GBA1_mutation": gba1,
     "T2D": t2d,
     "DBS": dbs,
@@ -272,7 +282,7 @@ case_text = st.text_area(
     "请输入脱敏病例描述",
     value=st.session_state["ai_raw_text"],
     height=180,
-    placeholder="例如：患者发病年龄大于50岁，GBA1阳性，T2D阳性，未行DBS，UPDRS III 45分，H&Y 3期，有跌倒史，无抑郁，无认知障碍。",
+    placeholder="例如：患者发病年龄大于50岁，起病至基线评估病程8年，GBA1阳性，T2D阳性，未行DBS，UPDRS III 45分，H&Y 3期，有跌倒史，无抑郁，无认知障碍。",
 )
 st.session_state["ai_raw_text"] = case_text
 
