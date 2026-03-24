@@ -27,13 +27,56 @@
     "Cognitive_dysfunction=Yes": 0.1361
   },
   "factor_levels": {
-    "Age_at_onset": ["≤50", ">50"],
-    "GBA1_mutation": ["No", "Yes"],
-    "T2D": ["No", "Yes"],
-    "DBS": ["No", "Yes"],
-    "Falls": ["No", "Yes"],
-    "Depression": ["No", "Yes"],
-    "Cognitive_dysfunction": ["No", "Yes"],
-    "HY_Stage": ["1", "2", "2.5", "3", "4", "5"]
+    "Age_at_onset": [
+      "≤50",
+      ">50"
+    ],
+    "GBA1_mutation": [
+      "No",
+      "Yes"
+    ],
+    "T2D": [
+      "No",
+      "Yes"
+    ],
+    "DBS": [
+      "No",
+      "Yes"
+    ],
+    "Falls": [
+      "No",
+      "Yes"
+    ],
+    "Depression": [
+      "No",
+      "Yes"
+    ],
+    "Cognitive_dysfunction": [
+      "No",
+      "Yes"
+    ],
+    "HY_Stage": [
+      "1",
+      "2",
+      "2.5",
+      "3",
+      "4",
+      "5"
+    ]
+  },
+  "risk_stratification": {
+    "method": "nomogram_cutoff_aligned_with_lp",
+    "groups": [
+      "低风险",
+      "高风险"
+    ],
+    "points_cutoff": 173.7308,
+    "lp_cutoff": 0.6202395,
+    "reference_horizon_risks_at_cutoff": {
+      "3y": 0.08323111,
+      "5y": 0.1737927,
+      "7y": 0.2728046
+    },
+    "note": "风险分层基于论文中列线图总分对应的分界值。LP 大于该阈值判定为高风险。"
   }
 }

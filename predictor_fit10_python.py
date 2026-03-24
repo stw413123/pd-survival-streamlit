@@ -16,6 +16,9 @@ FACTOR_LEVELS = MODEL_EXPORT["factor_levels"]
 # 2) 这里仍然读取导出的 centered linear predictor 常数。
 # 3) 你需要使用“包含 disease_duration_baseline 系数”的最新 JSON 文件替换同名文件。
 LP_CENTERING_CONSTANT = MODEL_EXPORT.get("lp_centering_constant", MODEL_EXPORT.get("LP_CENTERING_CONSTANT", 0.0))
+RISK_STRATIFICATION = MODEL_EXPORT.get("risk_stratification", {})
+LP_CUTOFF = float(RISK_STRATIFICATION.get("lp_cutoff", 0.6202395))
+POINTS_CUTOFF = float(RISK_STRATIFICATION.get("points_cutoff", 173.7308))
 
 REQUIRED_FIELDS = [
     "Age_at_onset",
@@ -86,6 +89,10 @@ def compute_raw_score(payload: Dict[str, Any]) -> float:
 def compute_linear_predictor(payload: Dict[str, Any]) -> float:
     return compute_raw_score(payload) - float(LP_CENTERING_CONSTANT)
 
+def classify_risk_by_lp(lp: float) -> str:
+    return "高风险" if lp > LP_CUTOFF else "低风险"
+
+
 
 def predict_fit10_python(payload: Dict[str, Any]) -> Dict[str, Any]:
     missing = validate_payload(payload)
@@ -99,6 +106,8 @@ def predict_fit10_python(payload: Dict[str, Any]) -> Dict[str, Any]:
     surv_5y = BASELINE_SURVIVAL["5y"] ** hr
     surv_7y = BASELINE_SURVIVAL["7y"] ** hr
 
+    risk_label = classify_risk_by_lp(lp)
+
     return {
         "input": payload,
         "predictions": {
@@ -109,5 +118,8 @@ def predict_fit10_python(payload: Dict[str, Any]) -> Dict[str, Any]:
             "risk_3y": round(1 - surv_3y, 4),
             "risk_5y": round(1 - surv_5y, 4),
             "risk_7y": round(1 - surv_7y, 4),
+            "risk_group": risk_label,
+            "lp_cutoff_for_risk_group": round(LP_CUTOFF, 4),
+            "points_cutoff_for_risk_group": round(POINTS_CUTOFF, 1),
         },
     }
