@@ -51,6 +51,8 @@ def init_session_state():
         "qa_input": "",
         "qa_message": None,
         "qa_history": [],
+        "qa_latest_question": "",
+        "qa_latest_answer": "",
         "qa_clear_pending": False,
     }
     for k, v in defaults.items():
@@ -120,14 +122,7 @@ def show_qa_flash_message():
 
 
 def classify_risk(preds: dict) -> str:
-    risk_7y = preds.get("risk_7y")
-    if risk_7y is None:
-        return "未知"
-    if risk_7y < 0.20:
-        return "低风险"
-    if risk_7y < 0.50:
-        return "中风险"
-    return "高风险"
+    return preds.get("risk_group", "未知")
 
 
 def get_current_payload_from_session():
@@ -155,7 +150,11 @@ def show_prediction_result(result: dict):
     c3.metric("7年风险", f"{preds.get('risk_7y', 0):.4f}")
 
     risk_label = classify_risk(preds)
+    lp_cutoff = preds.get("lp_cutoff_for_risk_group")
+    points_cutoff = preds.get("points_cutoff_for_risk_group")
     st.info(f"当前总体风险等级：**{risk_label}**")
+    if lp_cutoff is not None and points_cutoff is not None:
+        st.caption(f"风险分层遵循论文中的分界值：总分 > {points_cutoff}（等价于 LP > {lp_cutoff}）判定为高风险，否则为低风险。")
 
     rows = [
         ("线性预测值（LP）", preds.get("linear_predictor")),
@@ -165,6 +164,9 @@ def show_prediction_result(result: dict):
         ("3年风险", preds.get("risk_3y")),
         ("5年风险", preds.get("risk_5y")),
         ("7年风险", preds.get("risk_7y")),
+        ("风险分层", preds.get("risk_group")),
+        ("风险分层 LP 分界值", preds.get("lp_cutoff_for_risk_group")),
+        ("风险分层列线图总分分界值", preds.get("points_cutoff_for_risk_group")),
     ]
     df = pd.DataFrame(rows, columns=["指标", "数值"])
     st.dataframe(df, use_container_width=True)
@@ -178,6 +180,7 @@ def show_explanation(result: dict):
     st.write(f"总体风险等级：{risk_label}")
     st.write("解释说明：")
     st.write("该结果由新 fit10 Cox 主模型的 Python 复现版计算生成。")
+    st.write("显示的风险分层遵循论文中基于列线图总分推导得到的正式分界值，而不是人为设定的概率阈值。")
     st.write("当前平台仅用于科研与辅助评估，不替代临床诊断和治疗决策。")
 
 
@@ -237,6 +240,8 @@ def render_pd_qa_panel():
 
     if clear_btn:
         st.session_state["qa_history"] = []
+        st.session_state["qa_latest_question"] = ""
+        st.session_state["qa_latest_answer"] = ""
         st.session_state["qa_clear_pending"] = True
         st.session_state["qa_message"] = ("info", "已清空问答记录。")
         st.rerun()
@@ -256,56 +261,55 @@ def render_pd_qa_panel():
             st.session_state["qa_message"] = ("error", qa_result["error"])
             st.rerun()
 
-        st.session_state["qa_history"].append({
-            "role": "user",
-            "content": qa_question.strip(),
-        })
-        st.session_state["qa_history"].append({
-            "role": "assistant",
-            "content": qa_result["answer"].strip(),
-        })
+        latest_question = qa_question.strip()
+        latest_answer = qa_result["answer"].strip()
+
+        st.session_state["qa_history"] = [
+            {"role": "user", "content": latest_question},
+            {"role": "assistant", "content": latest_answer},
+        ]
+        st.session_state["qa_latest_question"] = latest_question
+        st.session_state["qa_latest_answer"] = latest_answer
         st.session_state["qa_clear_pending"] = True
         st.session_state["qa_message"] = ("success", "科普回答已生成。")
         st.rerun()
 
-    if st.session_state["qa_history"]:
-        st.markdown("### 问答记录")
+    if st.session_state.get("qa_latest_answer"):
+        st.markdown("### 当前问答")
 
-        for i, item in enumerate(st.session_state["qa_history"]):
-            if item["role"] == "user":
-                st.markdown(
-                    f"""
-                    <div style="
-                        background:#fff7ed;
-                        border:1px solid #fed7aa;
-                        border-radius:12px;
-                        padding:10px 12px;
-                        margin:8px 0 8px 24px;
-                        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-                    ">
-                        <div style="font-weight:700; margin-bottom:4px;">🧑 提问 {i // 2 + 1}</div>
-                        <div style="line-height:1.7;">{item['content']}</div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.markdown(
-                    f"""
-                    <div style="
-                        background:#f0fdf4;
-                        border:1px solid #bbf7d0;
-                        border-radius:12px;
-                        padding:10px 12px;
-                        margin:8px 24px 12px 0;
-                        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-                    ">
-                        <div style="font-weight:700; margin-bottom:4px;">🤖 科普回答</div>
-                        <div style="line-height:1.8;">{item['content']}</div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
+        st.markdown(
+            f"""
+            <div style="
+                background:#fff7ed;
+                border:1px solid #fed7aa;
+                border-radius:12px;
+                padding:10px 12px;
+                margin:8px 0 8px 24px;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            ">
+                <div style="font-weight:700; margin-bottom:4px;">🧑 当前提问</div>
+                <div style="line-height:1.7;">{st.session_state["qa_latest_question"]}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            f"""
+            <div style="
+                background:#f0fdf4;
+                border:1px solid #bbf7d0;
+                border-radius:12px;
+                padding:10px 12px;
+                margin:8px 24px 12px 0;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            ">
+                <div style="font-weight:700; margin-bottom:4px;">🤖 当前回答</div>
+                <div style="line-height:1.8;">{st.session_state["qa_latest_answer"]}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     st.info("提示：这个模块适合回答 PD 基础知识、症状解释、康复与照护等科普问题；不用于替代医生给出个体化诊断和用药方案。")
 
@@ -494,4 +498,4 @@ with qa_col:
     render_pd_qa_panel()
 
 st.markdown("---")
-st.caption("说明：AI 仅用于结构化提取、患者教育与辅助录入，风险值由 Python 复现版 fit10 模型计算。")
+st.caption("说明：AI 仅用于结构化提取、患者教育与辅助录入，风险值由 Python 复现版 fit10 模型计算；风险分层遵循论文中确定的列线图分界值。")
